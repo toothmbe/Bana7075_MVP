@@ -1,0 +1,199 @@
+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 - Token
+
+!git clone https://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@github.com/toothmbe/Bana7075_MVP.git
+
+
+!ls
+
+-- Run the main.py which includes test and train data pipeline. Inputs to this will be any files that comes in--
+%cd /content/Bana7075_MVP
+!python main.py
+
+-- This is to execute the data quality tests -- 
+%cd /content/Bana7075_MVP
+!python -m tests.data_quality.test_data_quality
+
+
+
+%cd /content/Bana7075_MVP
+!mv datapipeline/main.py .
+!ls
+
+
+!python main.py
+
+
+
+
+%cd /content/Bana7075_MVP
+!git status
+!git add tests
+!git add datapipeline/main.py
+!git status
+
+
+
+!git config user.name "Sagar Vedantam"
+!git config user.email "vedantsd@mail.uc.edu"
+!git commit -m "Add data quality tests and fix project structure"
+
+
+
+
+
+
+%cd /content/Bana7075_MVP
+!git status
+!git add tests
+!git add datapipeline/main.py
+!git commit -m "Add data quality tests and fix project structure"
+!git push
+
+%cd /content/Bana7075_MVP/
+!git status
+!git add datapipeline/bike_data_pipeline.py
+!git commit -m "Added coding comments in the code"
+!git push
+
+
+======================== Fast API ======================================
+
+
+%cd /content/Bana7075_MVP
+!pwd
+
+Install the required dependencies. 
+!pip -q install lightgbm scikit-learn pandas numpy joblib
+
+!python -m modeltraining.train_lightgbm
+
+Installing FastAPI dependencies
+!pip -q install fastapi uvicorn pydantic requests
+
+Run FastAPI in the background
+!nohup uvicorn api_app:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+!tail -n 20 uvicorn.log
+
+Check the health
+
+import requests
+resp = requests.get("http://127.0.0.1:8000/health", timeout=10)
+print(resp.status_code)
+print(resp.json())
+
+Single Prediction Call
+
+import requests
+payload = {
+  "records": [
+    {
+      "datetime": "2011-01-20 00:00:00",
+      "season": 1,
+      "holiday": 0,
+      "workingday": 1,
+      "weather": 1,
+      "temp": 10.66,
+      "atemp": 11.365,
+      "humidity": 56,
+      "windspeed": 26.0027
+    }
+  ],
+  "round_to_int": True
+}
+resp = requests.post(
+    "http://127.0.0.1:8000/predict",
+    json=payload,
+    timeout=20
+)
+print(resp.status_code)
+print(resp.json())
+
+10 rows from test.csv
+
+import pandas as pd
+import requests
+test_df = pd.read_csv("test.csv")
+payload = {
+  "records": test_df.head(10).to_dict(orient="records"),
+  "round_to_int": True
+}
+resp = requests.post(
+    "http://127.0.0.1:8000/predict",
+    json=payload,
+    timeout=20
+)
+print(resp.status_code)
+print(resp.json())
+
+Providing 10 rows in the API call
+
+import requests
+payload = {
+  "records": [
+    {
+      "datetime": "2011-01-20 00:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 10.66, "atemp": 11.365, "humidity": 56, "windspeed": 26.0027
+    },
+    {
+      "datetime": "2011-01-20 01:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 10.66, "atemp": 13.635, "humidity": 56, "windspeed": 0.0
+    },
+    {
+      "datetime": "2011-01-20 02:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 10.66, "atemp": 13.635, "humidity": 56, "windspeed": 0.0
+    },
+    {
+      "datetime": "2011-01-20 03:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 10.66, "atemp": 12.88, "humidity": 56, "windspeed": 11.0014
+    },
+    {
+      "datetime": "2011-01-20 04:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 10.66, "atemp": 12.88, "humidity": 56, "windspeed": 11.0014
+    },
+    {
+      "datetime": "2011-01-20 05:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 9.84, "atemp": 11.365, "humidity": 60, "windspeed": 15.0013
+    },
+    {
+      "datetime": "2011-01-20 06:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 9.02, "atemp": 10.605, "humidity": 60, "windspeed": 15.0013
+    },
+    {
+      "datetime": "2011-01-20 07:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 9.02, "atemp": 10.605, "humidity": 55, "windspeed": 15.0013
+    },
+    {
+      "datetime": "2011-01-20 08:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 1,
+      "temp": 9.02, "atemp": 10.605, "humidity": 55, "windspeed": 19.0012
+    },
+    {
+      "datetime": "2011-01-20 09:00:00",
+      "season": 1, "holiday": 0, "workingday": 1, "weather": 2,
+      "temp": 9.84, "atemp": 11.365, "humidity": 52, "windspeed": 15.0013
+    }
+  ],
+  "round_to_int": True
+}
+resp = requests.post("http://127.0.0.1:8000/predict", json=payload, timeout=20)
+print("Status:", resp.status_code)
+print(resp.json())
+
+Stopping the server
+!fuser -k 8000/tcp
+
+Removing the log as part of clean up
+!rm -f uvicorn.log
+
+
+
+
+
