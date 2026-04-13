@@ -1,4 +1,5 @@
 
+from contextlib import asynccontextmanager
 from typing import List, Optional
 from pathlib import Path
 
@@ -6,6 +7,7 @@ import numpy as np
 import pandas as pd
 import joblib
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 # Import feature engineering functions from your pipeline
@@ -15,10 +17,27 @@ ARTIFACTS_DIR = Path("artifacts")
 MODEL_PATH = ARTIFACTS_DIR / "lightgbm_model.joblib"
 PREPROCESSOR_PATH = ARTIFACTS_DIR / "preprocessor.joblib"
 
-app = FastAPI(title="Bike Rental Demand API", version="1.0")
-
 MODEL = None
 PREPROCESSOR = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global MODEL, PREPROCESSOR
+    if MODEL_PATH.exists() and PREPROCESSOR_PATH.exists():
+        MODEL = joblib.load(MODEL_PATH)
+        PREPROCESSOR = joblib.load(PREPROCESSOR_PATH)
+    yield
+
+
+app = FastAPI(title="Bike Rental Demand API", version="1.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class PredictRecord(BaseModel):
@@ -37,15 +56,6 @@ class PredictRequest(BaseModel):
     records: List[PredictRecord]
     round_to_int: Optional[bool] = True  # you requested integer output
 
-
-@app.on_event("startup")
-def load_artifacts():
-    global MODEL, PREPROCESSOR
-    if not MODEL_PATH.exists() or not PREPROCESSOR_PATH.exists():
-        MODEL, PREPROCESSOR = None, None
-        return
-    MODEL = joblib.load(MODEL_PATH)
-    PREPROCESSOR = joblib.load(PREPROCESSOR_PATH)
 
 
 @app.get("/health")
