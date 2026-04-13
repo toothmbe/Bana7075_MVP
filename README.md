@@ -33,6 +33,21 @@ Run data quality tests
 
 # DevOps Pipeline
 
+## Infrastructure Overview
+```
+Your machine
+  → push to production
+        │
+        ├── GitHub Actions runner (Ubuntu VM, free)
+        │     ├── run data quality tests
+        │     ├── train model (smoke test)
+        │     └── deploy docs/ → GitHub Pages
+        │
+        └── Render server (Linux, free tier)
+              ├── train model (for real)
+              └── run FastAPI server ← web UI calls this
+```
+
 ## Branches
 All production-ready code lives on the `production` branch. The CI/CD pipeline triggers automatically on every push to `production`.
 
