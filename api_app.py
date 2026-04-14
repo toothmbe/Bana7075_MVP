@@ -1,12 +1,14 @@
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from typing import List, Optional
 from pathlib import Path
+import json
 
 import numpy as np
 import pandas as pd
 import joblib
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -16,6 +18,20 @@ from datapipeline.bike_data_pipeline import add_time_features, add_lag_feature
 ARTIFACTS_DIR = Path("artifacts")
 MODEL_PATH = ARTIFACTS_DIR / "lightgbm_model.joblib"
 PREPROCESSOR_PATH = ARTIFACTS_DIR / "preprocessor.joblib"
+
+LOGS_DIR = Path("logs")
+PREDICTIONS_LOG = LOGS_DIR / "predictions.log"
+
+
+def log_prediction(inputs: dict, prediction: int):
+    LOGS_DIR.mkdir(exist_ok=True)
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "inputs": inputs,
+        "prediction": prediction,
+    }
+    with open(PREDICTIONS_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
 
 MODEL = None
 PREPROCESSOR = None
@@ -58,6 +74,16 @@ class PredictRequest(BaseModel):
 
 
 
+@app.get("/logs")
+def get_logs(limit: int = Query(default=50, le=500)):
+    if not PREDICTIONS_LOG.exists():
+        return {"entries": []}
+    with open(PREDICTIONS_LOG, "r") as f:
+        lines = f.readlines()
+    entries = [json.loads(line) for line in lines if line.strip()]
+    return {"entries": entries[-limit:][::-1]}  # newest first
+
+
 @app.get("/health")
 def health():
     return {
@@ -89,5 +115,8 @@ def predict(req: PredictRequest):
 
     if req.round_to_int:
         preds = np.round(preds).astype(int)
+
+    for record, prediction in zip(req.records, preds.tolist()):
+        log_prediction(record.dict(), prediction)
 
     return {"predictions": preds.tolist()}

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Prediction Logs — Bike Rental Demand</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f4f8;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    .header {
+      max-width: 1100px;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header h1 { font-size: 1.4rem; color: #1a202c; }
+    .header p { font-size: 0.875rem; color: #718096; margin-top: 0.2rem; }
+
+    .actions { display: flex; gap: 0.75rem; align-items: center; }
+
+    button {
+      padding: 0.5rem 1rem;
+      background: #3182ce;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #2b6cb0; }
+
+    a.back {
+      font-size: 0.875rem;
+      color: #3182ce;
+      text-decoration: none;
+    }
+    a.back:hover { text-decoration: underline; }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      max-width: 1100px;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+
+    .status-bar {
+      padding: 0.75rem 1.25rem;
+      background: #ebf8ff;
+      border-bottom: 1px solid #bee3f8;
+      font-size: 0.8rem;
+      color: #2c5282;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead {
+      background: #f7fafc;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #4a5568;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.65rem 1rem;
+      color: #2d3748;
+      border-bottom: 1px solid #edf2f7;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f7fafc; }
+
+    .prediction-cell {
+      font-weight: 700;
+      color: #2b6cb0;
+      font-size: 1rem;
+    }
+
+    .empty {
+      padding: 3rem;
+      text-align: center;
+      color: #a0aec0;
+      font-size: 0.95rem;
+    }
+
+    .note {
+      max-width: 1100px;
+      margin: 1rem auto 0;
+      font-size: 0.75rem;
+      color: #a0aec0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <h1>Prediction Logs</h1>
+      <p>Most recent predictions served by the API</p>
+    </div>
+    <div class="actions">
+      <a class="back" href="index.html">← Make a prediction</a>
+      <button onclick="loadLogs()">Refresh</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="status-bar" id="statusBar">Loading...</div>
+    <div id="tableContainer">
+      <div class="empty">Loading logs...</div>
+    </div>
+  </div>
+
+  <p class="note">Note: logs reset on each API deployment (Render free tier does not persist disk between deploys).</p>
+
+  <script>
+    const API_URL = "https://bana7075-mvp.onrender.com";
+
+    const SEASON_LABELS = { 1: "Spring", 2: "Summer", 3: "Fall", 4: "Winter" };
+    const WEATHER_LABELS = {
+      1: "Clear", 2: "Mist/Cloudy", 3: "Light Rain/Snow", 4: "Heavy Rain"
+    };
+
+    function formatTimestamp(iso) {
+      const d = new Date(iso);
+      return d.toLocaleString();
+    }
+
+    async function loadLogs() {
+      document.getElementById("statusBar").textContent = "Loading...";
+      try {
+        const resp = await fetch(`${API_URL}/logs?limit=50`);
+        const data = await resp.json();
+        const entries = data.entries;
+
+        document.getElementById("statusBar").textContent =
+          `Showing ${entries.length} most recent predictions — last refreshed ${new Date().toLocaleTimeString()}`;
+
+        if (entries.length === 0) {
+          document.getElementById("tableContainer").innerHTML =
+            '<div class="empty">No predictions logged yet. Make a prediction first.</div>';
+          return;
+        }
+
+        const rows = entries.map(e => {
+          const i = e.inputs;
+          return `
+            <tr>
+              <td>${formatTimestamp(e.timestamp)}</td>
+              <td>${i.datetime}</td>
+              <td>${SEASON_LABELS[i.season] || i.season}</td>
+              <td>${WEATHER_LABELS[i.weather] || i.weather}</td>
+              <td>${i.holiday ? "Yes" : "No"}</td>
+              <td>${i.workingday ? "Yes" : "No"}</td>
+              <td>${i.temp}</td>
+              <td>${i.atemp}</td>
+              <td>${i.humidity}</td>
+              <td>${i.windspeed}</td>
+              <td class="prediction-cell">${e.prediction}</td>
+            </tr>
+          `;
+        }).join("");
+
+        document.getElementById("tableContainer").innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Logged At</th>
+                <th>Input Date/Time</th>
+                <th>Season</th>
+                <th>Weather</th>
+                <th>Holiday</th>
+                <th>Working Day</th>
+                <th>Temp</th>
+                <th>Feels Like</th>
+                <th>Humidity</th>
+                <th>Wind</th>
+                <th>Predicted</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+      } catch (err) {
+        document.getElementById("statusBar").textContent = "Could not reach the API.";
+        document.getElementById("tableContainer").innerHTML =
+          '<div class="empty">API may be starting up — wait 30 seconds and refresh.</div>';
+      }
+    }
+
+    loadLogs();
+  </script>
+</body>
+</html>
