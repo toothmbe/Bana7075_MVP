@@ -2,7 +2,7 @@ services:
   - type: web
     name: bana7075-group10-api
     runtime: python
-    branch: production
+    branch: main
     buildCommand: pip install -r requirements.txt && python -m modeltraining.train_lightgbm
     startCommand: uvicorn api_app:app --host 0.0.0.0 --port $PORT
     plan: free
