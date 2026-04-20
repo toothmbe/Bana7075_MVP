@@ -92,7 +92,7 @@ To retrain the model with new data:
 3. GitHub Actions validates the pipeline
 4. Render automatically retrains and redeploys the API
 
-# Contributors
+# Group 10 Contributors
 - James Allen
 - Lee Brodbeck-Moore
 - Rachael Rahe
